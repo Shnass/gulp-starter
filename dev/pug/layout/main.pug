@@ -1,0 +1,11 @@
+include ../helpers/mixins
+block variables
+
+doctype html
+html 
+ head
+  title #{title}
+  link(href="static/css/main.css" rel="stylesheet")
+ body 
+  block content
+  script(src="static/js/main.js")
