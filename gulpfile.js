@@ -12,6 +12,9 @@ const svgSprite = require('gulp-svg-sprite');
 const svgmin = require('gulp-svgmin');
 const cheerio = require('gulp-cheerio');
 const replace = require('gulp-replace');
+const gulpIf = require('gulp-if');
+
+let isBuildFlag = false;
 
 function pug2html() {
 	return gulp.src('dev/pug/pages/*.pug')
@@ -41,7 +44,7 @@ function script() {
 		.pipe(gulpBabel({
 			presets: ['@babel/env']
 		}))
-		.pipe(gulpUglify())
+		.pipe(gulpIf(isBuildFlag, gulpUglify()))
 		.pipe(bs.stream())
 		.pipe(gulp.dest('dist/static/js/'))
 }
@@ -58,7 +61,7 @@ function imageMin(){
 		'dev/static/images/**/*.{jpg,png,gif,svg}',
 		'!dev/static/images/sprite/*',
 		])
-		.pipe(gulpImagemin([
+		.pipe(gulpIf(isBuildFlag, gulpImagemin([
 		gulpImagemin.gifsicle({interlaced: true}),
 		gulpImagemin.mozjpeg({quality: 75, progressive: true}),
 		gulpImagemin.optipng({optimizationLevel: 5}),
@@ -67,7 +70,7 @@ function imageMin(){
 				{removeViewBox: true},
 				{cleanupIDs: false}
 			]
-		})]))
+		})])))
 		.pipe(gulp.dest('dist/static/images/'))
 }
 
@@ -116,9 +119,19 @@ function watch() {
 	gulp.watch("dev/pug/**/*.pug", pug2html).on('change', bs.reload);
 }
 
+function setMode(isBuild) {
+	 return cb => {
+		isBuildFlag = isBuild;
+		cb();
+	}
+}
+
 function clean() {
 	// TODO 
 	
 }
 
-exports.default = gulp.series(pug2html, scss2css, script, imageMin, watch, fonts)
+const dev = gulp.parallel(pug2html, scss2css, script, imageMin, fonts)
+
+exports.default = gulp.series(dev, watch)
+exports.build = gulp.series(setMode(true), dev)
